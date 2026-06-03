@@ -79,8 +79,20 @@ function primeVoices() {
   speechSynthesis.speak(u);
 }
 
+// letterbox 정보(비율 유지 스케일 + 좌상단 패딩). 추론 후 원본 좌표로 되돌릴 때 쓴다.
+let lb = { scale: 1, padX: 0, padY: 0 };
+
 function preprocess() {
-  pctx.drawImage(video, 0, 0, INPUT, INPUT);
+  // 카메라 프레임을 비율 유지로 축소 후 가운데 배치, 남는 곳은 회색(114) 패딩.
+  // ultralytics 학습/추론과 동일한 letterbox → 사람/차가 찌그러지지 않음.
+  const vw = video.videoWidth, vh = video.videoHeight;
+  const scale = Math.min(INPUT / vw, INPUT / vh);
+  const nw = Math.round(vw * scale), nh = Math.round(vh * scale);
+  const padX = Math.floor((INPUT - nw) / 2), padY = Math.floor((INPUT - nh) / 2);
+  lb = { scale, padX, padY };
+  pctx.fillStyle = "rgb(114,114,114)";
+  pctx.fillRect(0, 0, INPUT, INPUT);
+  pctx.drawImage(video, 0, 0, vw, vh, padX, padY, nw, nh);
   const { data } = pctx.getImageData(0, 0, INPUT, INPUT); // RGBA
   const area = INPUT * INPUT;
   const f = new Float32Array(3 * area);
@@ -106,7 +118,11 @@ function decode(tensor) {
     }
     if (best < conf) continue;
     const cx = data[i], cy = data[n + i], w = data[2 * n + i], h = data[3 * n + i];
-    boxes.push({ x1: cx - w / 2, y1: cy - h / 2, x2: cx + w / 2, y2: cy + h / 2, score: best, cls: bestK });
+    // 640 letterbox 좌표 → 원본 카메라 픽셀 좌표로 환원: (좌표 - 패딩) / 스케일
+    const inv = 1 / lb.scale;
+    const x1 = (cx - w / 2 - lb.padX) * inv, y1 = (cy - h / 2 - lb.padY) * inv;
+    const x2 = (cx + w / 2 - lb.padX) * inv, y2 = (cy + h / 2 - lb.padY) * inv;
+    boxes.push({ x1, y1, x2, y2, score: best, cls: bestK });
   }
   return nms(boxes, iou);
 }
@@ -134,14 +150,16 @@ function iouOf(a, b) {
 
 // guide.py 이식: 가장 위험한 객체 하나 선택
 function decide(dets) {
+  // 박스는 이제 원본 카메라 픽셀 좌표 → 면적·방향을 실제 프레임 크기로 정규화.
+  const vw = video.videoWidth, vh = video.videoHeight;
   let best = null;
   for (const d of dets) {
-    const area = (d.x2 - d.x1) * (d.y2 - d.y1) / (INPUT * INPUT);
+    const area = (d.x2 - d.x1) * (d.y2 - d.y1) / (vw * vh);
     let prox = null;
     if (area >= nearR) prox = "near";
     else if (area >= midR) prox = "mid";
     else continue; // far → 안내 안 함
-    const cxn = (d.x1 + d.x2) / 2 / INPUT;
+    const cxn = (d.x1 + d.x2) / 2 / vw;
     const dir = cxn < leftB ? "left" : cxn > rightB ? "right" : "front";
     const name = labels[d.cls];
     const score = (riskWeights[name] ?? 0.5) * PROX_FACTOR[prox];
@@ -171,7 +189,8 @@ function announce(g) {
 }
 
 function draw(dets, g) {
-  const sx = dcanvas.width / INPUT, sy = dcanvas.height / INPUT;
+  // 박스가 원본 프레임 좌표이므로, 표시 캔버스 크기(=영상 크기)로 직접 매핑.
+  const sx = dcanvas.width / video.videoWidth, sy = dcanvas.height / video.videoHeight;
   dctx.drawImage(video, 0, 0, dcanvas.width, dcanvas.height);
   dctx.lineWidth = Math.max(2, dcanvas.width / 320);
   dctx.font = `${Math.max(14, dcanvas.width / 36)}px sans-serif`;
