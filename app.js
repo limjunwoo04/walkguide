@@ -3,9 +3,12 @@
 // PC의 guide.py 로직을 그대로 JS로 옮긴 것. 좌표 계산은 640 입력 공간에서 한다
 // (방향=중심x/640, 근접=면적/640² 라서 화면 크기와 무관 → 그대로 비율로 쓰임).
 
+const VERSION = "v3-gpu";   // 화면 상태바에 표시 → 폰이 최신본을 받았는지 확인용
 const INPUT = 640;
 const PROX_FACTOR = { near: 1.0, mid: 0.6 };
 const DIR_NAMES = { left: "왼쪽", front: "전방", right: "오른쪽" };
+// 클래스별 최소 신뢰도(오탐 억제용). 라바콘/볼라드는 헛탐지가 많아 높게 잡는다.
+const CONF_OVERRIDE = { traffic_cone: 0.6, bollard: 0.55 };
 // 박스 색(클래스별). 없으면 초록.
 const COLORS = {
   car: "#ff3030", bus: "#ff3030", truck: "#ff3030",
@@ -15,7 +18,7 @@ const COLORS = {
   traffic_light: "#ffff00", tree: "#7cb342",
 };
 
-let CFG, session, inName, outName;
+let CFG, session, inName, outName, backend = "wasm";
 let labels, labelsKo, riskWeights, conf, iou, cooldown, leftB, rightB, nearR, midR;
 let running = false;
 const lastSpoke = {};
@@ -61,7 +64,17 @@ async function start() {
   setStatus("모델 로드 중… (10MB, 처음만 시간 걸림)");
   ort.env.wasm.wasmPaths = "https://cdn.jsdelivr.net/npm/onnxruntime-web@1.19.2/dist/";
   ort.env.wasm.numThreads = 1;
-  session = await ort.InferenceSession.create("model.onnx", { executionProviders: ["wasm"] });
+  // 폰 GPU(WebGPU)로 추론하면 CPU(WASM)보다 몇 배 빠르다. 안 되면 WASM으로 폴백.
+  backend = "wasm";
+  try {
+    if (!navigator.gpu) throw new Error("WebGPU 미지원 브라우저");
+    session = await ort.InferenceSession.create("model.onnx", { executionProviders: ["webgpu"] });
+    backend = "webgpu";
+  } catch (e) {
+    console.warn("WebGPU 실패 → WASM 폴백:", e.message);
+    session = await ort.InferenceSession.create("model.onnx", { executionProviders: ["wasm"] });
+    backend = "wasm";
+  }
   inName = session.inputNames[0];
   outName = session.outputNames[0];
 
@@ -116,7 +129,8 @@ function decode(tensor) {
       const s = data[(4 + k) * n + i];
       if (s > best) { best = s; bestK = k; }
     }
-    if (best < conf) continue;
+    // 클래스별 임계값(라바콘 등은 더 높게) 적용 → 오탐 억제
+    if (best < (CONF_OVERRIDE[labels[bestK]] ?? conf)) continue;
     const cx = data[i], cy = data[n + i], w = data[2 * n + i], h = data[3 * n + i];
     // 640 letterbox 좌표 → 원본 카메라 픽셀 좌표로 환원: (좌표 - 패딩) / 스케일
     const inv = 1 / lb.scale;
@@ -227,7 +241,7 @@ async function loop() {
     const now = performance.now();
     fps = 0.9 * fps + 0.1 * (1000 / Math.max(now - prev, 1));
     prev = now;
-    setStatus(`${fps.toFixed(1)} FPS · 탐지 ${dets.length}`);
+    setStatus(`${VERSION} · ${backend.toUpperCase()} · ${fps.toFixed(1)} FPS · 탐지 ${dets.length}`);
     await sleep(0); // UI 양보
   }
 }
