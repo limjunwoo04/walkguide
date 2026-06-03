@@ -3,12 +3,12 @@
 // PC의 guide.py 로직을 그대로 JS로 옮긴 것. 좌표 계산은 640 입력 공간에서 한다
 // (방향=중심x/640, 근접=면적/640² 라서 화면 크기와 무관 → 그대로 비율로 쓰임).
 
-const VERSION = "v3-gpu";   // 화면 상태바에 표시 → 폰이 최신본을 받았는지 확인용
-const INPUT = 640;
+const VERSION = "v4-480";   // 화면 상태바에 표시 → 폰이 최신본을 받았는지 확인용
+const INPUT = 480;          // 모델 입력(640→480): 추론 ~1.8배 빠름
 const PROX_FACTOR = { near: 1.0, mid: 0.6 };
 const DIR_NAMES = { left: "왼쪽", front: "전방", right: "오른쪽" };
-// 클래스별 최소 신뢰도(오탐 억제용). 라바콘/볼라드는 헛탐지가 많아 높게 잡는다.
-const CONF_OVERRIDE = { traffic_cone: 0.6, bollard: 0.55 };
+// 클래스별 최소 신뢰도. 라바콘/볼라드는 오탐 많아 높게, 사람은 잘 안 잡혀 낮게.
+const CONF_OVERRIDE = { traffic_cone: 0.6, bollard: 0.55, person: 0.25 };
 // 박스 색(클래스별). 없으면 초록.
 const COLORS = {
   car: "#ff3030", bus: "#ff3030", truck: "#ff3030",

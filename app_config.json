@@ -41,15 +41,15 @@
     "traffic_light": 0.5,
     "traffic light": 0.5,
     "person": 0.4,
-    "tree": 0.3
+    "tree": 0.1
   },
   "direction": {
     "left_bound": 0.33,
     "right_bound": 0.67
   },
   "proximity": {
-    "near_area_ratio": 0.2,
-    "mid_area_ratio": 0.08
+    "near_area_ratio": 0.12,
+    "mid_area_ratio": 0.04
   },
   "tts": {
     "cooldown_sec": 3.0
