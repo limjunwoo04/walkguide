@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+  <title>보행 안내</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body { background: #000; color: #eee; font-family: system-ui, sans-serif; height: 100%; overflow: hidden; }
+    #stage { position: relative; width: 100vw; height: 100vh; display: flex; align-items: center; justify-content: center; }
+    #view { max-width: 100%; max-height: 100%; }
+    #start {
+      position: absolute; inset: 0; display: flex; flex-direction: column;
+      align-items: center; justify-content: center; gap: 16px; background: #000; z-index: 10;
+    }
+    #start h1 { font-size: 20px; font-weight: 600; }
+    #start p { font-size: 14px; color: #999; text-align: center; line-height: 1.6; padding: 0 24px; }
+    #go {
+      margin-top: 8px; padding: 16px 40px; font-size: 18px; font-weight: 700;
+      background: #1e88e5; color: #fff; border: none; border-radius: 12px;
+    }
+    #status {
+      position: absolute; top: 8px; left: 8px; font-size: 12px; color: #0f0;
+      background: rgba(0,0,0,.5); padding: 4px 8px; border-radius: 6px; z-index: 5;
+    }
+  </style>
+</head>
+<body>
+  <div id="stage">
+    <canvas id="view"></canvas>
+    <div id="status">대기 중</div>
+    <div id="start">
+      <h1>시각장애인 보행 안내</h1>
+      <p>후면 카메라로 앞을 비추면<br>위험한 물체를 한국어 음성으로 안내합니다.</p>
+      <button id="go">시작하기</button>
+      <p style="color:#666;font-size:12px">시작을 누르면 카메라·소리 권한을 허용해 주세요.</p>
+    </div>
+  </div>
+  <script src="https://cdn.jsdelivr.net/npm/onnxruntime-web@1.19.2/dist/ort.min.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

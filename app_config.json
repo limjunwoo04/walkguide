@@ -1,0 +1,57 @@
+{
+  "imgsz": 640,
+  "conf": 0.35,
+  "iou": 0.5,
+  "labels": [
+    "traffic_cone",
+    "bollard",
+    "electric_scooter",
+    "person",
+    "bicycle",
+    "car",
+    "motorcycle",
+    "bus",
+    "truck",
+    "traffic_light",
+    "tree"
+  ],
+  "labels_ko": {
+    "traffic_cone": "라바콘",
+    "bollard": "볼라드",
+    "electric_scooter": "전동킥보드",
+    "person": "사람",
+    "bicycle": "자전거",
+    "car": "차량",
+    "motorcycle": "오토바이",
+    "bus": "버스",
+    "truck": "트럭",
+    "traffic_light": "신호등",
+    "traffic light": "신호등",
+    "tree": "나무"
+  },
+  "risk_weights": {
+    "car": 1.0,
+    "bus": 1.0,
+    "truck": 1.0,
+    "electric_scooter": 0.95,
+    "motorcycle": 0.9,
+    "bollard": 0.85,
+    "traffic_cone": 0.85,
+    "bicycle": 0.7,
+    "traffic_light": 0.5,
+    "traffic light": 0.5,
+    "person": 0.4,
+    "tree": 0.3
+  },
+  "direction": {
+    "left_bound": 0.33,
+    "right_bound": 0.67
+  },
+  "proximity": {
+    "near_area_ratio": 0.2,
+    "mid_area_ratio": 0.08
+  },
+  "tts": {
+    "cooldown_sec": 3.0
+  }
+}
