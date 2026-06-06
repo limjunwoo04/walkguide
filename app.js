@@ -68,11 +68,11 @@ async function start() {
   backend = "wasm";
   try {
     if (!navigator.gpu) throw new Error("WebGPU 미지원 브라우저");
-    session = await ort.InferenceSession.create("model.onnx?v=4", { executionProviders: ["webgpu"] });
+    session = await ort.InferenceSession.create("model.onnx?v=5", { executionProviders: ["webgpu"] });
     backend = "webgpu";
   } catch (e) {
     console.warn("WebGPU 실패 → WASM 폴백:", e.message);
-    session = await ort.InferenceSession.create("model.onnx?v=4", { executionProviders: ["wasm"] });
+    session = await ort.InferenceSession.create("model.onnx?v=5", { executionProviders: ["wasm"] });
     backend = "wasm";
   }
   inName = session.inputNames[0];
